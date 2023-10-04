@@ -55,11 +55,25 @@ contract NftMarketplaceTest is Test{
    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
   }
 
- 
+  function testPrice() public {
+    vm.expectRevert();
+    NftMarket.listItem(nftAddr, tokenId, 0, deadline, signature);
+  }
+
   function testDeadline() public {
      uint256 _deadline = 3 minutes;
     vm.expectRevert();
     NftMarket.listItem(nftAddr, tokenId, price, _deadline, signature);
+  }
+
+  function testIsListed() public {
+    vm.expectRevert();
+    NftMarket.getListing(1);
+  }
+
+  function testIsOwner() public {
+    vm.expectRevert();
+    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
   }
 
   function testListItem() public {
