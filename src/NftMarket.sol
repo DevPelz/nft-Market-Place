@@ -80,9 +80,10 @@ error NotOwner();
             revert PriceMustBeAboveZero();  
         }
         IERC721 nft = IERC721(nftAddress);
-        if (nft.getApproved(tokenId) != address(this)) {
-            revert NotApprovedForMarketplace();
-        }
+        // if (nft.getApproved(tokenId) != address(this)) {
+            // revert NotApprovedForMarketplace();
+        // }
+        require(nft.isApprovedForAll(msg.sender, address(this)), "Not approved");
         listCount++;
         uint256 orderId = listCount;
         idToListing[orderId] = Listing( nftAddress, price, msg.sender, block.timestamp + deadline, signature);
