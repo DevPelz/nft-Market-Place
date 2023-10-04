@@ -52,7 +52,7 @@ contract NftMarketplaceTest is Test{
   }
 
   function testApproval() public {
-   vm.expectRevert("Not approved");
+   vm.expectRevert(bytes("Not approved"));
    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
   }
 

@@ -23,8 +23,8 @@ contract NftMarketplace {
     error PriceMustBeAboveZero();
     error NotOwner();
 
-    mapping(uint256 => Listing) private idToListing;
-    mapping(uint256 => bool) private isActiveListing;
+    mapping(uint256 => Listing) public idToListing;
+    mapping(uint256 => bool) public isActiveListing;
 
     modifier isListed(uint256 listId) {
         if (isActiveListing[listId] == false) {
