@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {NftMarketplace} from "../src/NftMarket.sol";
+import {NftMarketplace, Listing} from "../src/NftMarket.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
@@ -46,17 +46,44 @@ contract NftMarketplaceTest is Test{
     assertEq(signer, owner);
   }
 
+  function approveAll() public {
+    ITestNft nft = ITestNft(nftAddr);
+    nft.setApprovalForAll(address(NftMarket), true);
+  }
+
   function testApproval() public {
-   vm.expectRevert(bytes("Not approved"));
+   vm.expectRevert("Not approved");
    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
   }
-// 
-  // function testListItem(address nftAddr, uint256 tokenId, uint256 price, uint256 deadline, bytes memory signature) public {
-    // NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
-    // assertEq(NftMarket.idToListing(0).nftAddress, nftAddr);
-    // assertEq(NftMarket.idToListing(0).price, price);
-    // assertEq(NftMarket.idToListing(0).deadline, deadline);
-    // assertEq(NftMarket.idToListing(0).seller, owner);
-    // assertEq(NftMarket.idToListing(0).signature, signature);
-  // }
+
+ 
+  function testDeadline() public {
+     uint256 _deadline = 3 minutes;
+    vm.expectRevert(bytes("Deadline must be greater than 1 hour in the future"));
+    NftMarket.listItem(nftAddr, tokenId, price, _deadline, signature);
   }
+
+  function testListItem() public {
+    approveAll();
+    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
+    Listing memory listedItem = NftMarket.getListing(1);
+    assertEq(listedItem.nftAddress, nftAddr);
+    assertEq(listedItem.price, price);
+    assertEq(listedItem.seller, owner);
+    assertEq(listedItem.deadline, block.timestamp + deadline);
+    assertEq(listedItem.signature, signature);
+  }
+
+  function testBuyItem() public {
+    approveAll();
+    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
+    bytes32 msgHash = NftMarket.createMessageHash(nftAddr, tokenId, price, deadline);
+    NftMarket.buyItem(1, msgHash);
+    Listing memory listedItem = NftMarket.getListing(1);
+    assertEq(listedItem.nftAddress, nftAddr);
+    assertEq(listedItem.price, price);
+    assertEq(listedItem.seller, owner);
+    assertEq(listedItem.deadline, deadline);
+    assertEq(listedItem.signature, bytes(""));
+  }
+      }
