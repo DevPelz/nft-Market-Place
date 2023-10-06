@@ -7,9 +7,11 @@ import {Sign} from "./libraries/signature.sol";
 
 struct Listing {
     address nftAddress;
+    uint256 tokenId;
     uint256 price;
     address seller;
     uint256 deadline;
+    bool status;
     bytes signature;
 }
 contract NftMarketplace {
@@ -46,50 +48,48 @@ contract NftMarketplace {
 
 
     function listItem(
-        address nftAddress,
-        uint256 tokenId,
-        uint256 price,
-        uint256 deadline,
-        bytes memory signature
-    ) external  {
-        if(IERC721(nftAddress).ownerOf(tokenId) != msg.sender){
+  Listing calldata order
+    ) external returns(uint256 id) {
+        if(msg.sender != IERC721(order.nftAddress).ownerOf(order.tokenId) ){
             revert NotOwner();
         }
-       if(IERC721(nftAddress).isApprovedForAll(msg.sender, address(this)) == false){
+       if(!IERC721(order.nftAddress).isApprovedForAll(msg.sender, address(this))){
            revert NotApprovedForMarketplace();}
-       if (deadline - block.timestamp <   1 hours) {
+       if (order.deadline - block.timestamp <   1 hours) {
             revert MinDurationNotMet();
         }
-        if (price < 0.01 ether) {
+        if (order.price < 0.01 ether) {
             revert PriceMustBeAboveZero();
         }
 
         bytes32 messageHash =   Sign.constructMessageHash(
-                    nftAddress,
-                    tokenId,
-                    price,
-                    deadline,
+                    order.nftAddress,
+                    order.tokenId,
+                    order.price,
+                    order.deadline,
                     msg.sender
                 );
              if (
             !Sign.isValid(
                 messageHash,
-                signature,
+                order.signature,
                 msg.sender
             )
         ) revert InvalidSignature();
 
         uint256 orderId = listCount;
 
-        Listing memory lists = idToListing[orderId];
-        lists.nftAddress = nftAddress;
-        lists.price = price;
+        Listing storage lists = idToListing[orderId];
+        lists.nftAddress = order.nftAddress;
+        lists.tokenId = order.tokenId;
+        lists.price = order.price;
         lists.seller = msg.sender;
-        lists.deadline = deadline;
-        lists.signature = signature;
+        lists.deadline = order.deadline;
+        lists.signature = order.signature;
+        lists.status = true;
 
         listCount++;
-        isActiveListing[orderId] = true;
+        id;
     }
 
     function buyItem(
