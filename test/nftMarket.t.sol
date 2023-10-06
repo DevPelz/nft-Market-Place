@@ -139,6 +139,16 @@ function testValidSig() public {
     NftMarket.buyItem(3 );
   }
 
+  function testBuyShouldRevertIfPriceNotMet() public {
+    vm.startPrank(owner);
+    Nft.setApprovalForAll(address(NftMarket), true);
+    uint id = NftMarket.listItem(listing);
+    vm.stopPrank();
+
+    vm.prank(user);
+    vm.expectRevert(abi.encodeWithSelector(NftMarketplace.PriceNotMet.selector, listing.price));
+    NftMarket.buyItem(id);
+  }
 
 //   function testUpdateListingFail() public{
 //     vm.startPrank(owner);
