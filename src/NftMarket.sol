@@ -55,23 +55,25 @@ contract NftMarketplace {
         if(IERC721(nftAddress).ownerOf(tokenId) != msg.sender){
             revert NotOwner();
         }
-       if(!IERC721(nftAddress).isApprovedForAll(msg.sender, address(this))){
+       if(IERC721(nftAddress).isApprovedForAll(msg.sender, address(this)) == false){
            revert NotApprovedForMarketplace();}
        if (deadline -block.timestamp <   1 hours) {
             revert MinDurationNotMet();
         }
-        if (price <= 0) {
+        if (price < 0.01 ether) {
             revert PriceMustBeAboveZero();
         }
-             if (
-            !Sign.isValid(
-                Sign.constructMessageHash(
+
+        bytes32 messageHash =   Sign.constructMessageHash(
                     nftAddress,
                     tokenId,
                     price,
                     deadline,
                     msg.sender
-                ),
+                );
+             if (
+            !Sign.isValid(
+                messageHash,
                 signature,
                 msg.sender
             )

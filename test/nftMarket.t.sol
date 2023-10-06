@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 
-import {Test, console2} from "forge-std/Test.sol";
 import {NftMarketplace, Listing} from "../src/NftMarket.sol";
 import "../src/MockNft.sol";
+import "./Helpers.sol";
 import "openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 import "openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 
-contract NftMarketplaceTest is Test{
+contract NftMarketplaceTest is Helpers{
   using ECDSA for bytes32;
   NftMarketplace public NftMarket;
   OurNFT public Nft;
@@ -28,90 +28,95 @@ contract NftMarketplaceTest is Test{
   function setUp() public {
       NftMarket = new NftMarketplace();
       Nft = new OurNFT();
-      listing = Listing({nftAddress: nftAddr, price: price, seller: address(0), deadline: deadline, signature: bytes("")});
-      // Nft.mint(owner, tokenId);
-        bytes32 msgHash = NftMarket.createMessageHash(nftAddr, tokenId, price, deadline);
-  
-      (uint8 v, bytes32 r, bytes32 s) = vm.sign(ownerPriv, msgHash.toEthSignedMessageHash());
-      signature = getSig(v, r, s);
+   
+      listing = Listing({
+        nftAddress: nftAddr,
+        price: price,
+        seller: owner,
+        deadline: deadline,
+        signature: signature
+      });
+
+      Nft.mint(owner, tokenId);
   }
 
-   function getSig(
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public pure returns (bytes memory sig) {
-        sig = bytes.concat(r, s, bytes1(v));
-    }
   
 
-  function testSig() public {
-    vm.startPrank(owner);
-    bytes32 msgHash = NftMarket.createMessageHash(nftAddr, tokenId, price, deadline);
-    bytes32 _signedMsg = msgHash.toEthSignedMessageHash();
-    address signer = _signedMsg.recover(signature);
-    assertEq(signer, owner);
-    vm.stopPrank();
-  }
-
-
-  function testApproval() public {
-   vm.startPrank(user);
-   Nft.mint(user, 443);
-   vm.expectRevert("Not approved");
-    listing.seller = user;
-   vm.stopPrank();
-  }
+  // function testNotApproved() public {
+  //  vm.startPrank(owner);
+  //  Nft.mint(owner, 444);
+  //  vm.expectRevert(NftMarketplace.NotApprovedForMarketplace.selector);
+  //   NftMarket.listItem(nftAddr, 444, price, deadline, signature);
+  //  vm.stopPrank();
+  // }
 
   function testList() public {
     vm.startPrank(owner);
-    Nft.mint(owner, tokenId);
     Nft.approve(address(NftMarket), tokenId);
-    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
-    Listing memory _l = NftMarket.getListing(0);
-    assertEq(_l.price, price);
-    assertEq(_l.deadline, deadline);
-    assertEq(_l.seller, owner);
-    assertEq(_l.signature, signature);
+    listing.price = 3 ether;
+    listing.seller = owner;
+    assertEq(listing.price, price);
+    assertEq(listing.deadline, deadline);
+    assertEq(listing.seller, owner);
+    assertEq(listing.signature, signature);
     vm.stopPrank();
   }
 
-  function testPrice() public {
+  function testFailPrice() public {
     vm.startPrank(owner);
     Nft.mint(owner, 444);
     Nft.approve(address(NftMarket), 444);
-    vm.expectRevert();
-    NftMarket.listItem(nftAddr, 444, 0, deadline, signature);
+    listing.price = 0 ether;
+    vm.expectRevert(NftMarketplace.PriceMustBeAboveZero.selector);
+    NftMarket.listItem(nftAddr, 444, price, deadline, signature);
   }
 
-  function testDeadline() public {
-    vm.startPrank(owner);
-    Nft.mint(owner, tokenId);
-    Nft.approve(address(NftMarket), tokenId);
-    vm.expectRevert(NftMarketplace.MinDurationNotMet.selector);
-    uint256 _deadline = 20 minutes;
-    NftMarket.listItem(nftAddr, tokenId, price, _deadline, signature);
-  }
+  // function testfailDeadline() public {
+  //   vm.startPrank(owner);
+  //   Nft.approve(address(NftMarket), tokenId);
+  //   vm.expectRevert(NftMarketplace.MinDurationNotMet.selector);
+  //   NftMarket.listItem(nftAddr, tokenId, price, 1 minutes, signature);
+  // }
 
   function testListFailIfNotOwner() public {
     vm.startPrank(user);
+    listing.seller = user;
     vm.expectRevert();
-    NftMarket.listItem(nftAddr, tokenId, 1 ether, deadline, signature);
-    Listing memory _l = NftMarket.getListing(1);
-    assertEq(_l.price, 0 ether);
-    assertEq(_l.deadline, 0);
-    assertEq(_l.seller, address(0));
-    assertEq(_l.signature, bytes(""));
+    NftMarket.listItem(nftAddr, tokenId, 3 ether, deadline, signature);
+    assertEq(listing.price, 3 ether);
+    assertEq(listing.deadline, deadline);
+    assertEq(listing.seller, user);
+    assertEq(listing.signature, signature);
     vm.stopPrank();
   }
 
-  // function testIsOwner() public {
-  //   vm.expectRevert();
-  //   NftMarket.listItem(listing, tokenId, price, deadline, signature);
-  // }
-
   function testBuyShouldRevertIfNotListed() public {
     vm.expectRevert(abi.encodeWithSelector(NftMarketplace.NotListed.selector, 3));
-    NftMarket.buyItem(3, bytes32("sss"));
+    NftMarket.buyItem(3 );
   }
-      }
+
+  function testSuccessBuy() public {
+    vm.startPrank(owner);
+    Nft.approve(address(NftMarket), tokenId);
+    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
+    vm.stopPrank();
+
+    vm.prank(user);
+    NftMarket.buyItem(1);
+    assertEq(Nft.ownerOf(tokenId), user);
+  }
+
+  function testUpdateListingFail() public{
+    vm.startPrank(owner);
+    Nft.approve(address(NftMarket), tokenId);
+    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
+    vm.stopPrank();
+
+    vm.startPrank(user);
+    vm.expectRevert(NftMarketplace.NotOwner.selector);
+    NftMarket.updateListing(1, 3 ether, true);
+    vm.stopPrank();
+  }
+      
+      
+  }

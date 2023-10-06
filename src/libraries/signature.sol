@@ -23,9 +23,6 @@ library Sign {
         bytes32 ethSignedMessageHash = getEthSignedMessageHash(messageHash);
 
         return recoverSigner(ethSignedMessageHash, signature) == signer;
-        // return
-        //     recoverSigner(ethSignedMessageHash, signature) ==
-        //     address(uint160(signer));
     }
 
     function getEthSignedMessageHash(
