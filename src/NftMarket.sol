@@ -57,7 +57,7 @@ contract NftMarketplace {
         }
        if(IERC721(nftAddress).isApprovedForAll(msg.sender, address(this)) == false){
            revert NotApprovedForMarketplace();}
-       if (deadline -block.timestamp <   1 hours) {
+       if (deadline - block.timestamp <   1 hours) {
             revert MinDurationNotMet();
         }
         if (price < 0.01 ether) {

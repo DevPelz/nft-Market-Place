@@ -28,6 +28,8 @@ contract NftMarketplaceTest is Helpers{
   function setUp() public {
       NftMarket = new NftMarketplace();
       Nft = new OurNFT();
+
+      signature = constructSig(nftAddr, tokenId, price, deadline, owner, ownerPriv);
    
       listing = Listing({
         nftAddress: nftAddr,
@@ -40,7 +42,20 @@ contract NftMarketplaceTest is Helpers{
       Nft.mint(owner, tokenId);
   }
 
-  
+function testValidSig() public {
+    vm.prank(owner);
+    bytes memory sig = constructSig(nftAddr, tokenId, price, deadline, owner, ownerPriv);
+    listing.signature = sig;
+    assertEq(sig, signature);
+  }
+
+
+  function testNotOwner() public {
+    vm.startPrank(user);
+    vm.expectRevert();
+    NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
+    vm.stopPrank();
+} 
 
   // function testNotApproved() public {
   //  vm.startPrank(owner);
