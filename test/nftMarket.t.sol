@@ -164,5 +164,16 @@ function testValidSig() public {
     vm.stopPrank();
   }
       
+  function testUpdateListingFailIfNotOwner() public{
+    vm.startPrank(owner);
+    Nft.setApprovalForAll(address(NftMarket), true);
+    uint256 id = NftMarket.listItem(listing);
+    vm.stopPrank();
+
+    vm.prank(user);
+    vm.expectRevert(NftMarketplace.NotOwner.selector);
+    NftMarket.updateListing(id, 3 ether, true);
+  
+    }
       
   }
