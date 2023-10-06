@@ -128,7 +128,7 @@ contract NftMarketplace {
         if (idToListing[orderId].seller != msg.sender) {
             revert NotOwner();
         }
-             Listing storage lists = idToListing[orderId];
+         Listing storage lists = idToListing[orderId];
         lists.price = _price;
         lists.status = status;
         isActiveListing[orderId] = status;
