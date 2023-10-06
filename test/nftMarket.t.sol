@@ -173,6 +173,23 @@ contract NftMarketplaceTest is Helpers {
         NftMarket.buyItem(id);
     }
 
+    function testBuyItemFailIfExpired() public{
+        vm.startPrank(owner);
+        Nft.setApprovalForAll(address(NftMarket), true);
+        uint id = NftMarket.listItem(listing);
+        vm.stopPrank();
+
+        vm.prank(user);
+        vm.warp(2 days);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                NftMarketplace.Expired.selector,
+                listing.deadline
+            )
+        );
+        NftMarket.buyItem(id);
+    }
+
     function testUpdateListing() public {
         vm.startPrank(owner);
         Nft.setApprovalForAll(address(NftMarket), true);
