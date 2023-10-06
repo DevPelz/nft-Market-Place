@@ -150,16 +150,19 @@ function testValidSig() public {
     NftMarket.buyItem(id);
   }
 
-//   function testUpdateListingFail() public{
-//     vm.startPrank(owner);
-//     Nft.approve(address(NftMarket), tokenId);
-//     uint256 id = NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
-//     NftMarket.updateListing(id, 3 ether, true);
-//    assertEq(listing.price, 3 ether);
-//    assertEq(listing.status, true);
+
+
+  function testUpdateListing() public{
+    vm.startPrank(owner);
+    Nft.setApprovalForAll(address(NftMarket), true);
+    uint256 id = NftMarket.listItem(listing);
+
+   NftMarket.updateListing(id, 3 ether, true);
+   assertEq(listing.price, 3 ether);
+   assertEq(listing.status, true);
   
-//     vm.stopPrank();
-//   }
+    vm.stopPrank();
+  }
       
       
   }
