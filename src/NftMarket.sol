@@ -11,10 +11,9 @@ struct Listing {
     uint256 deadline;
     bytes signature;
 }
-
 contract NftMarketplace {
     using ECDSA for bytes32;
-    uint256 listCount;
+    uint256 public listCount;
 
     error PriceNotMet(uint256 price);
     error NotListed(uint256 listId);
@@ -22,6 +21,9 @@ contract NftMarketplace {
     error NotApprovedForMarketplace();
     error PriceMustBeAboveZero();
     error NotOwner();
+    error MinDurationNotMet();
+
+
 
     mapping(uint256 => Listing) public idToListing;
     mapping(uint256 => bool) public isActiveListing;
@@ -40,18 +42,6 @@ contract NftMarketplace {
         _;
     }
 
-    modifier isOwner(
-        address nftAddress,
-        uint256 tokenId,
-        address spender
-    ) {
-        IERC721 nft = IERC721(nftAddress);
-        address owner = nft.ownerOf(tokenId);
-        if (spender != owner) {
-            revert NotOwner();
-        }
-        _;
-    }
 
     function createMessageHash(
         address nftAddress,
@@ -69,26 +59,26 @@ contract NftMarketplace {
         uint256 price,
         uint256 deadline,
         bytes memory signature
-    ) external isOwner(nftAddress, tokenId, msg.sender) {
-        require(
-            deadline > 1 hours,
-            "Deadline must be greater than 1 hour in the future"
-        );
+    ) external  {
+        if(IERC721(nftAddress).ownerOf(tokenId) != msg.sender){
+            revert NotOwner();
+        }
+       if (block.timestamp + deadline < block.timestamp + 1 hours) {
+            revert MinDurationNotMet();
+        }
         if (price <= 0) {
             revert PriceMustBeAboveZero();
         }
-        IERC721 nft = IERC721(nftAddress);
-        require(
-            nft.isApprovedForAll(msg.sender, address(this)),
-            "Not approved"
-        );
+       if(!IERC721(nftAddress).isApprovedForAll(msg.sender, address(this))){
+           revert NotApprovedForMarketplace();}
+
         listCount++;
         uint256 orderId = listCount;
         idToListing[orderId] = Listing(
             nftAddress,
             price,
             msg.sender,
-            block.timestamp + deadline,
+            deadline,
             signature
         );
         isActiveListing[orderId] = true;
