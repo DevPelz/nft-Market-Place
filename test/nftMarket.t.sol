@@ -72,10 +72,9 @@ function testValidSig() public {
 
     function testFailPrice() public {
     vm.startPrank(owner);
-    Nft.mint(owner, 444);
     Nft.setApprovalForAll(address(NftMarket), true);
-    listing.price = 0 ether;
-    listing.tokenId = 444;
+    listing.price = 0;
+    // listing.status = false;
     vm.expectRevert(NftMarketplace.PriceMustBeAboveZero.selector);
     NftMarket.listItem(listing);
     assertEq(listing.status, false);
@@ -83,7 +82,8 @@ function testValidSig() public {
 
     function testfailDeadline() public {
     vm.startPrank(owner);
-    Nft.approve(address(NftMarket), tokenId);
+     Nft.setApprovalForAll(address(NftMarket), true);
+     listing.deadline = 2 minutes;
     vm.expectRevert(NftMarketplace.MinDurationNotMet.selector);
     NftMarket.listItem(listing);
   }
@@ -110,35 +110,35 @@ function testValidSig() public {
 
 
 
+  function testListFailIfNotOwner() public {
+    vm.startPrank(user);
+    listing.seller = user;
+    vm.expectRevert(NftMarketplace.NotOwner.selector);
+    NftMarket.listItem(listing);
+    assertEq(listing.price, 3 ether);
+    assertEq(listing.deadline, deadline);
+    assertEq(listing.seller, user);
+    assertEq(listing.signature, signature);
+    vm.stopPrank();
+  }
 
+  function testBuy() public {
+    vm.startPrank(owner);
+    Nft.setApprovalForAll(address(NftMarket), true);
+    uint id = NftMarket.listItem(listing);
+    vm.stopPrank();
 
-//   function testListFailIfNotOwner() public {
-//     vm.startPrank(user);
-//     listing.seller = user;
-//     vm.expectRevert();
-//     NftMarket.listItem(nftAddr, tokenId, 3 ether, deadline, signature);
-//     assertEq(listing.price, 3 ether);
-//     assertEq(listing.deadline, deadline);
-//     assertEq(listing.seller, user);
-//     assertEq(listing.signature, signature);
-//     vm.stopPrank();
-//   }
+    hoax(user, 20 ether);
+    NftMarket.buyItem{value: 3 ether}(id);
+    assertEq(Nft.ownerOf(tokenId), user);
+   
+  }
 
-//   function testBuyShouldRevertIfNotListed() public {
-//     vm.expectRevert(abi.encodeWithSelector(NftMarketplace.NotListed.selector, 3));
-//     NftMarket.buyItem(3 );
-//   }
+  function testBuyShouldRevertIfNotListed() public {
+    vm.expectRevert(abi.encodeWithSelector(NftMarketplace.NotListed.selector, 3));
+    NftMarket.buyItem(3 );
+  }
 
-//   function testSuccessBuy() public {
-//     vm.startPrank(owner);
-//     Nft.approve(address(NftMarket), tokenId);
-//     NftMarket.listItem(nftAddr, tokenId, price, deadline, signature);
-//     vm.stopPrank();
-
-//     vm.prank(user);
-//     NftMarket.buyItem(1);
-//     assertEq(Nft.ownerOf(tokenId), user);
-//   }
 
 //   function testUpdateListingFail() public{
 //     vm.startPrank(owner);

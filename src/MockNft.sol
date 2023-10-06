@@ -5,8 +5,7 @@ import "openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
 
 contract OurNFT is ERC721("OurNFT", "ONFT") {
     function tokenURI(
-        uint256 id
-    ) public view virtual override returns (string memory) {
+    ) public view virtual returns (string memory) {
         return "";
     }
 

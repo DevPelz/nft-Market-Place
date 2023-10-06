@@ -58,7 +58,7 @@ contract NftMarketplace {
        if (order.deadline - block.timestamp <   1 hours) {
             revert MinDurationNotMet();
         }
-        if (order.price < 0.01 ether) {
+        if (order.price <= 0 ether) {
             revert PriceMustBeAboveZero();
         }
 
@@ -87,7 +87,8 @@ contract NftMarketplace {
         lists.deadline = order.deadline;
         lists.signature = order.signature;
         lists.status = true;
-
+        isActiveListing[orderId] = true;
+        id = listCount;
         listCount++;
         id;
     }
@@ -113,7 +114,7 @@ contract NftMarketplace {
         IERC721(idToListing[orderId].nftAddress).safeTransferFrom(
             listedItem.seller,
             msg.sender,
-            orderId
+            listedItem.tokenId
         );
     }
 
